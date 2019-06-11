@@ -1,37 +1,49 @@
 'use strict';
-const Minio = require('minio');
+// const Minio = require('minio');
+const AWS = require('aws-sdk');
 
 module.exports = class StorageService{
 
     constructor(bucket) {
-        this.S3Client = new Minio.Client({
-            endPoint: 'play.minio.io',
-            port: 9000,
-            useSSL: true,
-            accessKey: 'Q3AM3UQ867SPQQA43P2F',
-            secretKey: 'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
-        });
+        // this.S3Client = new Minio.Client({
+        //     endPoint: 'play.minio.io',
+        //     port: 9000,
+        //     useSSL: true,
+        //     accessKey: 'Q3AM3UQ867SPQQA43P2F',
+        //     secretKey: 'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
+        // });
+
+        // this.S3Client = new Minio.Client({
+        //     endPoint:  's3.amazonaws.com',
+        //     accessKey: '745802484335',
+        //     secretKey: 'zGioxfZxlG6lzlVC5lSj73oDAdlyrWqpQqoAKEiE'
+        // });
+        this.S3Client = new AWS.S3();
 
         this.bucket = bucket;
     }
 
     async createBucket(bucketName){
+        const params = {
+            Bucket: bucketName
+        };
         console.log("Criando Bucket:", bucketName);
-        const bucketExist = await this.bucketExists(bucketName);
+        // const bucketExist = await this.bucketExists(bucketName);
 
-        if (bucketExist)
-            return new StorageService(bucketName);
+        // if (bucketExist)
+        //     return new StorageService(bucketName);
 
-        await this.S3Client.makeBucket(bucketName, 'us-east-1');
+        const response = await this.S3Client.createBucket(bucketName); //, 'us-east-1'); //sa-east-1  us-east-1
 
         console.log("Bucket Criado");
+        console.log(response);
         return new StorageService(bucketName);
     }
 
     async listBuckets(){ //converter para private com typescript
-        return await this.S3Client.makeBucket().catch(err => {
-            console.log('Erro ao listar buckets', err);
-        })
+        const response = await this.S3Client.listBuckets();
+        console.log(response.Buckets);
+        return response;
     }
 
     async bucketExists(bucketName) {
@@ -65,9 +77,9 @@ module.exports = class StorageService{
 
     }
 
-    downloadFile(fileName){
+    async downloadFile(fileName){
         let size = 0;
-        this.S3Client.getObject(this.bucket, fileName, function(err, dataStream) {
+        await this.S3Client.getObject(this.bucket, fileName, function(err, dataStream) {
             if (err) {
                 return console.log(err)
             }

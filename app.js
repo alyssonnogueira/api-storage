@@ -8,20 +8,22 @@ var usersRouter = require('./routes/users');
 
 var app = express();
 
-var fs = require('fs');
+const fs = require('fs');
+const uuid = require('node-uuid');
 
 //TRABALHO
 const storageService = require('./services/StorageService');
 let StorageService = new storageService();
-let bucket = StorageService.createBucket("computacaoemnuvem");
+let bucket = StorageService.createBucket("computacaoemnuvem"+uuid.v4());
 bucket.then(async bucketService => {
-    for (let i = 0; i < 5; i++) {
-        const path = './public/';
-        let fileName = 'index'+i+'.html';
-        let fileStream = fs.createReadStream(path+fileName);
-        await bucketService.uploadFile(fileName, fileStream, fileStream.readableLength);
-    }
-    console.log("Carga Inicial de Dados concluída!");
+    await bucketService.listBuckets()
+    // for (let i = 0; i < 5; i++) {
+    //     const path = './public/';
+    //     let fileName = 'index'+i+'.html';
+    //     let fileStream = fs.createReadStream(path+fileName);
+    //     await bucketService.uploadFile(fileName, fileStream, fileStream.readableLength);
+    // }
+    // console.log("Carga Inicial de Dados concluída!");
 });
 
 app.use(logger('dev'));
