@@ -1,38 +1,67 @@
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+const bucketController = require('./controllers/BucketController');
+const fileController = require('./controllers/FileController');
 
 var app = express();
 
 const fs = require('fs');
 const uuid = require('node-uuid');
 
-//TRABALHO
-const storageService = require('./services/StorageService');
-let StorageService = new storageService();
-let bucket = StorageService.createBucket("computacaoemnuvem"+uuid.v4());
-bucket.then(async bucketService => {
-    await bucketService.listBuckets()
-    // for (let i = 0; i < 5; i++) {
-    //     const path = './public/';
-    //     let fileName = 'index'+i+'.html';
-    //     let fileStream = fs.createReadStream(path+fileName);
-    //     await bucketService.uploadFile(fileName, fileStream, fileStream.readableLength);
-    // }
-    // console.log("Carga Inicial de Dados concluída!");
-});
+//INICIANDO SISTEMA
+const BucketService = require('./services/BucketService');
+const FileService = require('./services/FileService');
+const bucketService = new BucketService();
+const fileService = new FileService();
+const NUMERO_DE_ARQUIVOS = 5;
+// console.log("Criando Bucket Inicial");
+// bucketService.createBucket("computacaoemnuvem").then(async bucketName => {
+//     console.log("Inserindo Carga Inicial de Arquivos");
+//     for (let i = 0; i < NUMERO_DE_ARQUIVOS; i++){
+//         console.log(`Upload ${i+1} de ${NUMERO_DE_ARQUIVOS}`);
+//         const path = './upload/';
+//         let fileName = 'index'+i+'.html';
+//         let fileStream = fs.createReadStream(path+fileName);
+//         await fileService.uploadFile(bucketName, fileName, fileStream);
+//     }
+//     console.log("Carga Inicial de Dados concluída!");
+// });
+
+
+
+
+
+
+// const storageService = require('./services/StorageService');
+// let StorageService = new storageService();
+// let bucket = StorageService.createBucket("teste-alysson");
+// await fileService.deletarBucket();
+// let bucket = StorageService.createBucket("computacaoemnuvem");
+// bucket.then(async bucketService => {
+//     for (let i = 0; i < 5; i++) {
+//         const path = './upload/';
+//         let fileName = 'index'+i+'.html';
+//         let fileStream = fs.createReadStream(path+fileName);
+//         // await fileService.uploadFile(fileName, fileStream, fileStream.readableLength);
+//         await bucketService.downloadFile(fileName);
+//         // await fileService.deleteFile(fileName);
+//         // console.log("Informacao do Arquivo");
+//         // const infoFile = await fileService.getInfoFile(fileName);
+//         // console.log(infoFile);
+//     }
+//     console.log("Carga Inicial de Dados concluída!");
+// });
 
 app.use(logger('dev'));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/', bucketController);
+app.use('/', fileController);
 
 module.exports = app;

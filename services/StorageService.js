@@ -1,59 +1,100 @@
 'use strict';
-// const Minio = require('minio');
+
+const fs = require("fs");
+
 const AWS = require('aws-sdk');
 
 module.exports = class StorageService{
 
     constructor(bucket) {
-        // this.S3Client = new Minio.Client({
-        //     endPoint: 'play.minio.io',
-        //     port: 9000,
-        //     useSSL: true,
-        //     accessKey: 'Q3AM3UQ867SPQQA43P2F',
-        //     secretKey: 'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
-        // });
 
-        // this.S3Client = new Minio.Client({
-        //     endPoint:  's3.amazonaws.com',
-        //     accessKey: '745802484335',
-        //     secretKey: 'zGioxfZxlG6lzlVC5lSj73oDAdlyrWqpQqoAKEiE'
-        // });
         this.S3Client = new AWS.S3();
 
         this.bucket = bucket;
+
+        this.downloadPath = './download/'
     }
 
     async createBucket(bucketName){
-        const params = {
-            Bucket: bucketName
-        };
         console.log("Criando Bucket:", bucketName);
-        // const bucketExist = await this.bucketExists(bucketName);
+        const bucketExist = await this.bucketExistsSecond(bucketName);
 
-        // if (bucketExist)
-        //     return new StorageService(bucketName);
+        if (bucketExist){
+            console.log("buckets.js " + bucketName + " já existe");
+            return new StorageService(bucketName);
+        }
+        const bucket = new Promise((resolve, reject) => {
+            const params = {
+                Bucket: bucketName
+            };
+            this.S3Client.createBucket(params, (err, data) => {
+                if (err){
+                    reject(err);
+                }
+                console.log(data);
+                resolve(data);
+            })
+        });
 
-        const response = await this.S3Client.createBucket(bucketName); //, 'us-east-1'); //sa-east-1  us-east-1
+        await bucket;
 
         console.log("Bucket Criado");
-        console.log(response);
         return new StorageService(bucketName);
     }
 
     async listBuckets(){ //converter para private com typescript
-        const response = await this.S3Client.listBuckets();
-        console.log(response.Buckets);
-        return response;
+        console.log("list Buckets");
+
+        const buckets = new Promise((resolve, reject) => {
+            const params = {};
+            this.S3Client.listBuckets(params, (err, data) => {
+                if (err){
+                    reject(err);
+                }
+                console.log(data);
+                if (data == null)
+                    return resolve([]);
+
+                const nameOfBuckets = data.Buckets.map(bucket => {
+                    return bucket.Name
+                });
+                resolve(nameOfBuckets);
+            });
+        });
+
+        return await buckets;
     }
 
     async bucketExists(bucketName) {
-        let exists = await this.S3Client.bucketExists(bucketName).catch(
-            err => {
-                console.log('Erro ao verificar se bucket existe!', err);
-            }
-        );
+        const exists = new Promise((resolve, reject) => {
+            const params = {
+                Bucket: bucketName
+            };
+            console.log(params);
+            this.S3Client.waitFor('bucketExists', params, (err, data) => {
+                if (err){
+                    reject(err);
+                }
+                console.log(data);
+                resolve(data);
+            });
+        });
 
-        if (exists){
+        if (await exists){
+            console.log('Bucket Existe!');
+        } else {
+            console.log('Bucket não existe');
+        }
+        return exists;
+    }
+
+    async bucketExistsSecond(bucketName) {
+
+        const exists = (await this.listBuckets()).some(bucket => {
+            return bucket === bucketName;
+        });
+
+        if (await exists){
             console.log('Bucket Existe!');
         } else {
             console.log('Bucket não existe');
@@ -62,57 +103,142 @@ module.exports = class StorageService{
     }
 
     async deletarBucket(){
-        return await this.S3Client.removeBucket(this.bucket).catch(err => {
-            console.log("Erro ao deletar bucket", err);
-        })
+        console.log("Excluindo um Bucket");
+
+        return new Promise((resolve, reject) => {
+            const params = {
+                Bucket: this.bucket
+            };
+            this.S3Client.deleteBucket(params, (err, data) => {
+                if (err){
+                    reject(err);
+                }
+                console.log(data);
+                resolve(data);
+            });
+        });
     }
 
     async uploadFile(fileName, fileStream, fileSize) {
         console.log("Realizando Upload de Arquivo");
 
-        await this.S3Client.putObject(this.bucket, fileName, fileStream, fileSize);
+        if (await this.fileExists(fileName)) {
+            console.log("Arquivo já existe!");
+            return true;
+        }
 
+        const file = new Promise((resolve, reject) => {
+            const params = {
+                Body: fileStream,
+                Bucket: this.bucket,
+                Key: fileName
+            };
+            this.S3Client.putObject(params, (err, data) => {
+                if (err){
+                    reject(err);
+                }
+                console.log(data);
+                resolve(data);
+            });
+        });
+        await file;
         console.log("Upload Concluido com Sucesso!!");
         return true;
-
     }
 
     async downloadFile(fileName){
         let size = 0;
-        await this.S3Client.getObject(this.bucket, fileName, function(err, dataStream) {
-            if (err) {
-                return console.log(err)
-            }
-            dataStream.on('data', function(chunk) {
-                size += chunk.length
+        return new Promise((resolve, reject) => {
+            const params = {
+                Bucket: this.bucket,
+                Key: fileName
+            };
+            this.S3Client.getObject(params, function (err, data) {
+                if (err) {
+                    reject(err);
+                }
+                console.log(data);
+                fs.writeFile(`./download/${fileName}`, data.Body, function (err) {
+                    if (err)
+                        reject(err);
+                    else resolve(data);
+                })
             });
+        });
+    }
 
-            dataStream.on('end', function() {
-                console.log('End. Total size = ' + size)
-            });
-
-            dataStream.on('error', function(err) {
-                console.log(err)
+    listFiles(){
+        return new Promise((resolve, reject) => {
+            const params = {
+                Bucket: this.bucket
+            };
+            this.S3Client.listObjectsV2(params, (err, data) => {
+                if (err){
+                    reject(err);
+                }
+                console.log(data);
+                resolve(data);
             });
         });
     }
 
     getInfoFile(fileName){
-        return this.S3Client.statObject(this.bucket, fileName);
+        return new Promise((resolve, reject) => {
+            const params = {
+                Bucket: this.bucket,
+                Prefix: fileName
+            };
+            this.S3Client.listObjectsV2(params, (err, data) => {
+                if (err){
+                    reject(err);
+                }
+                console.log(data);
+                if (data != null && data.Contents != null && data.Contents.length > 0)
+                    return resolve(data.Contents.map(file => {
+                        if (file.Key === fileName)
+                            return file
+                    }));
+
+                resolve(false);
+            });
+        });
     }
 
     async deleteFile(fileName){
-        await this.S3Client.removeObject(this.bucket, fileName);
-
-        console.log('Arquivo Removido com sucesso');
+        console.log("Excluindo um arquivo");
+        return new Promise((resolve, reject) => {
+            const params = {
+                Bucket: this.bucket,
+                Key: fileName
+            };
+            this.S3Client.deleteObject(params, (err, data) => {
+                if (err){
+                    reject(err);
+                }
+                console.log(data);
+                console.log('Arquivo Removido com sucesso');
+                resolve(true);
+            });
+        });
     }
 
     fileExists(fileName) {
-        let stats = this.getInfoFile(fileName).catch(
-            err => { console.log("Arquivo não encontrado"); }
-        );
+        return new Promise((resolve, reject) => {
+            const params = {
+                Bucket: this.bucket,
+                Prefix: fileName
+            };
+            this.S3Client.listObjectsV2(params, (err, data) => {
+                if (err){
+                    reject(err);
+                }
+                console.log(data);
+                if (data != null && data.Contents != null && data.Contents.length > 0)
+                    return resolve(data.Contents.some(file => { return file.Key === fileName }));
 
-        return stats != null;
+                resolve(false);
+            });
+        });
     }
 
 };
