@@ -17,18 +17,18 @@ const FileService = require('./services/FileService');
 const bucketService = new BucketService();
 const fileService = new FileService();
 const NUMERO_DE_ARQUIVOS = 5;
-// console.log("Criando Bucket Inicial");
-// bucketService.createBucket("computacaoemnuvem").then(async bucketName => {
-//     console.log("Inserindo Carga Inicial de Arquivos");
-//     for (let i = 0; i < NUMERO_DE_ARQUIVOS; i++){
-//         console.log(`Upload ${i+1} de ${NUMERO_DE_ARQUIVOS}`);
-//         const path = './upload/';
-//         let fileName = 'index'+i+'.html';
-//         let fileStream = fs.createReadStream(path+fileName);
-//         await fileService.uploadFile(bucketName, fileName, fileStream);
-//     }
-//     console.log("Carga Inicial de Dados concluída!");
-// });
+console.log("Criando Bucket Inicial");
+bucketService.createBucket("computacaoemnuvem").then(async bucketName => {
+    console.log("Inserindo Carga Inicial de Arquivos");
+    for (let i = 0; i < NUMERO_DE_ARQUIVOS; i++){
+        console.log(`Upload ${i+1} de ${NUMERO_DE_ARQUIVOS}`);
+        const path = './upload/';
+        let fileName = 'index'+i+'.html';
+        let fileStream = fs.createReadStream(path+fileName);
+        await fileService.uploadFile(bucketName, fileName, fileStream);
+    }
+    console.log("Carga Inicial de Dados concluída!");
+});
 
 
 
