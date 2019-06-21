@@ -1,14 +1,15 @@
 'use strict';
 
 const fs = require("fs");
-
 const AWS = require('aws-sdk');
+const RedisService = require('./RedisService');
 
 module.exports = class FileService{
 
     constructor() {
         this.S3Client = new AWS.S3();
-        this.downloadPath = './download/'
+        this.downloadPath = './download/';
+        this.redisService = new RedisService();
     }
 
     async uploadFile(bucketName, fileName, fileStream, fileSize) {
@@ -45,10 +46,24 @@ module.exports = class FileService{
                 if (err) {
                     return console.log(err)
                 }
-                console.log(data);
+                // console.log(data);
                 resolve(data.Body);
             });
         });
+    }
+
+    async downloadFileRedis(bucket, fileName){
+        const key = `${bucket}:${fileName}:buffer`;
+        const fileCache = await this.redisService.getKeyFile(key);
+        if (fileCache != null) {
+            // console.log("Cache Redis");
+            return fileCache;
+        }
+        const file = await this.downloadFile(bucket, fileName);
+        this.redisService.setKeyFile(key, file).then(result => { console.log("Redis Cache File")});
+        // console.log(file);
+
+        return file;
     }
 
     listFiles(bucketName){
@@ -88,8 +103,22 @@ module.exports = class FileService{
         });
     }
 
+    async getInfoFileRedis(bucket, fileName){
+        const key = `${bucket}:${fileName}:info`;
+        const fileInfoCache = await this.redisService.getKeyFile(key);
+        if (fileInfoCache != null) {
+            // console.log("Cache Redis");
+            return fileInfoCache;
+        }
+        const fileInfo = await this.getInfoFile(bucket, fileName);
+        this.redisService.setKey(key, fileInfo).then(result => { console.log("Redis Cache File")});
+        // console.log(fileInfo);
+
+        return fileInfo;
+    }
+
     async deleteFile(bucketName, fileName){
-        console.log("Excluindo um arquivo");
+        // console.log("Excluindo um arquivo");
         return new Promise((resolve, reject) => {
             const params = {
                 Bucket: bucketName,
@@ -100,10 +129,18 @@ module.exports = class FileService{
                     reject(err);
                 }
 
-                console.log('Arquivo Removido com sucesso');
+                // console.log('Arquivo Removido com sucesso');
                 resolve(true);
             });
         });
+    }
+
+    async deleteFileRedis(bucket, fileName) {
+        const keyInfo = `${bucket}:${fileName}:info`;
+        const keyBuffer = `${bucket}:${fileName}:buffer`;
+        this.redisService.deleteKey(keyInfo).then(cache => console.log("Info Delete From Cache"));
+        this.redisService.deleteKey(keyBuffer).then(cache => console.log("Buffer Delete From Cache"));
+        await this.deleteFile(bucket, fileName);
     }
 
     fileExists(bucketName, fileName) {

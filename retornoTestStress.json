@@ -1,0 +1,53 @@
+{
+  TempoCriacaoBucket: [ 880 ],
+  TemposUploadArquivoTexto: [
+    636, 588,
+    111, 663,
+    946, 946,
+    105, 798
+  ],
+  MediaUploadArquivoTexto: 599.125,
+  TempoTotalUploadTexto: 4793,
+  TemposUploadArquivoImagem: [
+     88, 221,
+    776, 970,
+    938, 511,
+    595, 993
+  ],
+  MediaUploadArquivoImagem: 636.5,
+  TempoTotalUploadImagem: 5092,
+  TemposDeAcessoArquivoTexto: [ 380, 544, 507, 423 ],
+  TempoTotalDeAcessoArquivoTexto: 1854,
+  MediaTempoDeAcessoArquivoTexto: 463.5,
+  TemposDeAcessoArquivoTextoRedis: [ 513, 492, 606, 677 ],
+  TempoTotalDeAcessoArquivoTextoRedis: 2288,
+  MediaTempoDeAcessoArquivoTextoRedis: 572,
+  TemposDeAcessoArquivoImagem: [ 109, 183, 324, 54 ],
+  TempoTotalDeAcessoArquivoImagem: 670,
+  MediaTempoDeAcessoArquivoImagem: 167.5,
+  TemposDeAcessoArquivoTextoImagem: [ 20, 31, 632, 109 ],
+  TempoTotalDeAcessoArquivoImagemRedis: 792,
+  MediaTempoDeAcessoArquivoImagemRedis: 198,
+  TemposDeAcessoInfoArquivos: 9887,
+  TempoTotalDeAcessoInfoArquivos: 9887,
+  MediaTempoDeAcessoInfoArquivos: 617.9375,
+  TemposDeAcessoInfoArquivosRedis: [],
+  TempoTotalDeAcessoInfoArquivosRedis: 0,
+  MediaTempoDeAcessoInfoArquivosRedis: NaN,
+  TemposDeExclusaoDosArquivos: [
+    0, 0, 0,
+    0, 0, 0,
+    0, 0
+  ],
+  TempoTotalDeExclusaoDosArquivos: 0,
+  MediaTempoDeExclusaoDosArquivos: 0,
+  TemposDeExclusaoDosArquivosRedis: 0,
+  TempoTotalDeExclusaoDosArquivosRedis: 0,
+  MediaTempoDeExclusaoDosArquivosRedis: NaN,
+  TotalArquivosUsados: 8,
+  NumeroDeArquivosDeTexto: 4,
+  TamanhoArquivosText: 176,
+  NumeroDearquivosDeImagem: 4,
+  TamanhoArquivosImagem: 65536,
+  TempoDeleteBucket: [ 0 ]
+}

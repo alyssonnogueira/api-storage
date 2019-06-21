@@ -26,6 +26,7 @@ var server = http.createServer(app);
  */
 
 server.listen(port);
+// srv.timeout(240000); //240 seconds
 server.on('error', onError);
 server.on('listening', onListening);
 
