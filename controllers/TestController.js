@@ -5,6 +5,8 @@ const BucketService = require('../services/BucketService');
 const bucketService = new BucketService();
 const FileService = require('../services/FileService');
 const fileService = new FileService();
+const RedisService = require('../services/RedisService');
+const redisService = new RedisService();
 
 const wrapper = fn => (req, res, next) => { Promise.resolve(fn(req, res, next)).catch(next); };
 
@@ -31,6 +33,12 @@ class TestController {
 
     static async stressTest(req, res){
         console.log("Iniciando Teste de Stress");
+
+        res.status(200).send({
+            status: true,
+            response: "Teste de Stress Iniciado!"
+        });
+
         let startTime = 0;
         let endTime = 0;
         let bucket = 'cn-stress-test';
@@ -43,112 +51,97 @@ class TestController {
         bucketCreationTime.push(creationTime);
         console.log(`Criou bucket em ${creationTime} MilliSegundos`);
 
-        const NUMBER_OF_FILES = 4;
-        let path = './upload/';
-        //Upload 40 arquivos de texto
-        let fileNameText = 'index0.html';
-        let fileStreamText = fs.createReadStream(path+fileNameText);
-        const uploadText = TestController.getTimeUpload(NUMBER_OF_FILES, fileService, textFileUploadTime, bucket,
-            'index', 'html', fileStreamText);
-
-        path = './download/';
-        let fileNameImage = 'thecrew.jpg';
-        let fileStreamImage = fs.createReadStream(path+fileNameImage);
-        const uploadImage = TestController.getTimeUpload(NUMBER_OF_FILES, fileService, imageFileUploadTime, bucket,
-            'thecrew', 'jpg', fileStreamImage);
+        const NUMBER_OF_FILES = 10;
+        const READ_TIMES = 10;
+        let path = './download/';
 
         console.log("Iniciando Upload de Arquivos");
-        await Promise.all([uploadText, uploadImage]);
+        await TestController.getTimeUpload(NUMBER_OF_FILES, fileService, textFileUploadTime, bucket,
+            'index', 'html');
+        await TestController.getTimeUpload(NUMBER_OF_FILES, fileService, imageFileUploadTime, bucket,
+            'thecrew', 'jpg');
 
-        //Download de Arquivos
-        const accessText = TestController.getTimeAccess(NUMBER_OF_FILES, fileService, textFileAccessTime, bucket, 'index',
-            'html');
-        const accessImage = TestController.getTimeAccess(NUMBER_OF_FILES, fileService, imageFileAccessTime, bucket, 'thecrew',
-            'jpg');
         console.log("Iniciando Download de Arquivos no S3");
-        await Promise.all([accessText, accessImage]);
+        await TestController.getTimeAccess(NUMBER_OF_FILES, fileService, textFileAccessTime, bucket, 'index',
+            'html', READ_TIMES);
+        await TestController.getTimeAccess(NUMBER_OF_FILES, fileService, imageFileAccessTime, bucket, 'thecrew',
+            'jpg', READ_TIMES);
 
-        //Download de Arquivo Com Redis
-        const accessTextRedis = TestController.getTimeAccessWithRedis(NUMBER_OF_FILES, fileService, textFileAccessTimeRedis,
-            bucket, 'index',
-            'html');
-        const accessImageRedis = TestController.getTimeAccessWithRedis(NUMBER_OF_FILES, fileService, imageFileAccessTimeRedis,
-            bucket, 'thecrew',
-            'jpg');
         console.log("Iniciando Download de Arquivos com S3 + Redis");
-        await Promise.all([accessTextRedis, accessImageRedis]);
+        await TestController.getTimeAccessWithRedis(NUMBER_OF_FILES, fileService, textFileAccessTimeRedis,
+            bucket, 'index','html', READ_TIMES);
+        await TestController.getTimeAccessWithRedis(NUMBER_OF_FILES, fileService, imageFileAccessTimeRedis,
+            bucket, 'thecrew','jpg', READ_TIMES);
 
-        //Acessar cada informacao de arquivo 3 vezes e retirar o tempo médio sem Redis
-        const accessInfoText = TestController.getTimeInfoAccess(NUMBER_OF_FILES, fileService, infoFileAccessTime, bucket,
-            'index', 'html');
-        const accessInfoImage = TestController.getTimeInfoAccess(NUMBER_OF_FILES, fileService, infoFileAccessTime, bucket,
-            'thecrew', 'jpg');
         console.log("Iniciando acesso a informacoes dos Arquivos no S3");
-        await Promise.all([accessInfoText, accessInfoImage]);
-
-        //Acessar cada informacao de arquivo 3 vezes e retirar o tempo médio com Redis
-        const accessInfoTextRedis = TestController.getTimeInfoAccessWithRedis(NUMBER_OF_FILES, fileService, infoFileAccessTime, bucket,
+        await TestController.getTimeInfoAccess(NUMBER_OF_FILES, fileService, infoFileAccessTime, bucket,
             'index', 'html');
-        const accessInfoImageRedis = TestController.getTimeInfoAccessWithRedis(NUMBER_OF_FILES, fileService, infoFileAccessTime, bucket,
+        await TestController.getTimeInfoAccess(NUMBER_OF_FILES, fileService, infoFileAccessTime, bucket,
             'thecrew', 'jpg');
+
         console.log("Iniciando acesso a informacoes dos Arquivos no S3 + Redis");
-        await Promise.all([accessInfoTextRedis, accessInfoImageRedis]);
-
-        //Deletar todos os arquivos (apenas no S3) e coletar tempo médio
-        const deleteTextFiles = TestController.getTimeDeleteFile(NUMBER_OF_FILES, fileService, deleteFileTime, bucket,
+        await TestController.getTimeInfoAccessWithRedis(NUMBER_OF_FILES, fileService, infoFileAccessTime, bucket,
             'index', 'html');
-        const deleteImageFiles = TestController.getTimeDeleteFile(NUMBER_OF_FILES, fileService, deleteFileTime, bucket,
+        await TestController.getTimeInfoAccessWithRedis(NUMBER_OF_FILES, fileService, infoFileAccessTime, bucket,
             'thecrew', 'jpg');
+
         console.log("Iniciando exclusão dos Arquivos no S3");
-        await Promise.all([deleteTextFiles, deleteImageFiles]);
-
-        //Upload dos 80 arquivos
-        const uploadText2 = TestController.getTimeUpload(NUMBER_OF_FILES, fileService, textFileUploadTime, bucket,
-            'index', 'html', fileStreamText);
-        const uploadImage2 = TestController.getTimeUpload(NUMBER_OF_FILES, fileService, imageFileUploadTime, bucket,
-            'thecrew', 'jpg', fileStreamImage);
-        console.log("Iniciando Upload de Arquivos Novamente");
-        await Promise.all([uploadText2, uploadImage2]);
-
-        //Deletar todos os arquivos do S3 + Redis e coletar tempo médio
-        const deleteTextFilesRedis = TestController.getTimeDeleteFileRedis(NUMBER_OF_FILES, fileService, deleteFileTimeRedis, bucket,
+        await TestController.getTimeDeleteFile(NUMBER_OF_FILES, fileService, deleteFileTime, bucket,
             'index', 'html');
-        const deleteImageFilesRedis = TestController.getTimeDeleteFileRedis(NUMBER_OF_FILES, fileService, deleteFileTimeRedis, bucket,
+        await TestController.getTimeDeleteFile(NUMBER_OF_FILES, fileService, deleteFileTime, bucket,
             'thecrew', 'jpg');
+
+        console.log("Iniciando Upload de Arquivos Novamente");
+        await TestController.getTimeUpload(NUMBER_OF_FILES, fileService, [], bucket,
+            'index', 'html');
+        await TestController.getTimeUpload(NUMBER_OF_FILES, fileService, [], bucket,
+            'thecrew', 'jpg');
+
         console.log("Iniciando exclusão dos Arquivos no S3 + Redis");
-        await Promise.all([deleteTextFilesRedis, deleteImageFilesRedis]);
+        await TestController.getTimeDeleteFileRedis(NUMBER_OF_FILES, fileService, deleteFileTimeRedis, bucket,
+            'index', 'html');
+        await TestController.getTimeDeleteFileRedis(NUMBER_OF_FILES, fileService, deleteFileTimeRedis, bucket,
+            'thecrew', 'jpg');
 
         //Deletar Bucket e coletar tempo de resposta
         console.log("Deletando Bucket");
         startTime = new Date();
-        //await bucketService.deletarBucket(bucket);
+        await bucketService.deletarBucket(bucket);
         endTime = new Date();
         let deleteTime = (new Date(endTime - startTime)).getMilliseconds();
         bucketDeleteTime.push(deleteTime);
         console.log(`Excluiu bucket em ${deleteTime} MilliSegundos`);
 
-        let retorno = TestController.getObjetoDeRetorno(NUMBER_OF_FILES, fileStreamText.readableLength, NUMBER_OF_FILES,
+        let fileStreamText = fs.createReadStream(path+'index0.html');
+        let fileStreamImage = fs.createReadStream(path+'thecrew.jpg');
+        let response = TestController.getObjetoDeRetorno(NUMBER_OF_FILES, fileStreamText.readableLength, NUMBER_OF_FILES,
             fileStreamImage.readableLength);
-        console.log(retorno);
-        return res.status(200).send(retorno);
+        console.log(response);
+        return await redisService.setKey('response', response);
     }
 
-    static async getTimeUpload(iterations, fileService, vectorTime, bucket, fileName, extension, fileStream){
+    static async getResponseTest(req, res){
+        const response = await redisService.getKey("response");
+        return res.status(200).send(response);
+    }
+
+    static async getTimeUpload(iterations, fileService, vectorTime, bucket, fileName, extension){
         for (let i = 0; i < iterations; i++) {
             // console.log(`Upload ${i+1} de ${iterations}`);
-            const startTime = new Date();
+            let fileStream = fs.createReadStream(`./download/${fileName}0.${extension}`);
+            let startTime = new Date();
             await fileService.uploadFile(bucket, `${fileName}${i}.${extension}`, fileStream, fileStream.readableLength);
-            const endTime = new Date();
-            const accessTime = (new Date(endTime - startTime)).getMilliseconds();
+            let endTime = new Date();
+            let accessTime = (new Date(endTime - startTime)).getMilliseconds();
             vectorTime.push(accessTime);
             console.log(`${fileName}${i}.${extension} - Upload em ${accessTime} MiliSegundos`);
         }
     }
 
-    static async getTimeAccess(iterations, fileService, vectorTime, bucket, fileName, extension){
+    static async getTimeAccess(iterations, fileService, vectorTime, bucket, fileName, extension, readTimes){
         for (let i = 0; i < iterations; i++) {
             const startTime = new Date();
-            for (let j = 0; j < 3; j++) {
+            for (let j = 0; j < readTimes; j++) {
                 await fileService.downloadFile(bucket, `${fileName}${i}.${extension}`);
             }
             const endTime = new Date();
@@ -158,10 +151,10 @@ class TestController {
         }
     }
 
-    static async getTimeInfoAccess(iterations, fileService, vectorTime, bucket, fileName, extension){
+    static async getTimeInfoAccess(iterations, fileService, vectorTime, bucket, fileName, extension, readTimes){
         for (let i = 0; i < iterations; i++) {
             const startTime = new Date();
-            for (let j = 0; j < 3; j++) {
+            for (let j = 0; j < readTimes; j++) {
                 await fileService.getInfoFile(bucket, `${fileName}${i}.${extension}`);
             }
             const endTime = new Date();
@@ -171,11 +164,11 @@ class TestController {
         }
     }
 
-    static async getTimeAccessWithRedis(iterations, fileService, vectorTime, bucket, fileName, extension){
+    static async getTimeAccessWithRedis(iterations, fileService, vectorTime, bucket, fileName, extension, readTimes){
         for (let i = 0; i < iterations; i++) {
             // console.log(`Acessando ${i+1} de ${iterations} com REDIS`);
             const startTime = new Date();
-            for (let j = 0; j < 3; j++) {
+            for (let j = 0; j < readTimes; j++) {
                 await fileService.downloadFileRedis(bucket, `${fileName}${i}.${extension}`);
             }
             const endTime = new Date();
@@ -185,11 +178,11 @@ class TestController {
         }
     }
 
-    static async getTimeInfoAccessWithRedis(iterations, fileService, vectorTime, bucket, fileName, extension){
+    static async getTimeInfoAccessWithRedis(iterations, fileService, vectorTime, bucket, fileName, extension, readTimes){
         for (let i = 0; i < iterations; i++) {
             // console.log(`Acessando ${i+1} de ${iterations} com REDIS`);
             const startTime = new Date();
-            for (let j = 0; j < 3; j++) {
+            for (let j = 0; j < readTimes; j++) {
                 await fileService.getInfoFileRedis(bucket, `${fileName}${i}.${extension}`);
             }
             const endTime = new Date();
@@ -202,7 +195,7 @@ class TestController {
     static async getTimeDeleteFile(iterations, fileService, vectorTime, bucket, fileName, extension){
         for (let i = 0; i < iterations; i++) {
             const startTime = new Date();
-            //await fileService.deleteFile(bucket, `${fileName}${i}.${extension}`);
+            await fileService.deleteFile(bucket, `${fileName}${i}.${extension}`);
             const endTime = new Date();
             let accessTime = (new Date(endTime - startTime)).getMilliseconds();
             vectorTime.push(accessTime);
@@ -213,7 +206,7 @@ class TestController {
     static async getTimeDeleteFileRedis(iterations, fileService, vectorTime, bucket, fileName, extension){
         for (let i = 0; i < iterations; i++) {
             const startTime = new Date();
-            //await fileService.deleteFileRedis(bucket, `${fileName}${i}.${extension}`);
+            await fileService.deleteFileRedis(bucket, `${fileName}${i}.${extension}`);
             const endTime = new Date();
             let accessTime = (new Date(endTime - startTime)).getMilliseconds();
             vectorTime.push(accessTime);
@@ -293,27 +286,10 @@ class TestController {
             TempoDeleteBucket: bucketDeleteTime
         }
     }
-
-    // Criar Bucket para o Teste e coletar tempo
-    // Upload 40 arquivos de texto
-    // Upload 40 arquivos de imagem
-    // Coletar tempo de cada requisicao
-    // Somar tempo total de todas as requisicoes
-    // Tempo medio de upload para arquivos de texto
-    // Tempo medio de upload para arquivos de imagem
-    // Acessar cada arquivo 3 vezes e retirar o tempo médio sem Redis
-    // Acessar cada arquivo 3 vezes e retirar o tempo médio com Redis
-    // Acessar cada informacao de arquivo 3 vezes e retirar o tempo médio sem Redis
-    // Acessar cada informacao de arquivo 3 vezes e retirar o tempo médio com Redis
-    // Deletar todos os arquivos (apenas no S3) e coletar tempo médio
-    // Upload dos 80 arquivos
-    // Deletar todos os arquivos do S3 + Redis e coletar tempo médio
-    // Deletar Bucket e coletar tempo de resposta
-    // Retornar JSON com todas as informações
-
 }
 
 router.get('', wrapper(TestController.index));
 router.get('/stress', wrapper(TestController.stressTest));
+router.get('/stress/response', wrapper(TestController.getResponseTest));
 
 module.exports = router;

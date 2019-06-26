@@ -38,7 +38,7 @@
     0, 0, 0,
     0, 0, 0,
     0, 0
-  ],
+],
   TempoTotalDeExclusaoDosArquivos: 0,
   MediaTempoDeExclusaoDosArquivos: 0,
   TemposDeExclusaoDosArquivosRedis: 0,
