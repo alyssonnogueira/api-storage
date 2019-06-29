@@ -32,31 +32,6 @@ const NUMERO_DE_ARQUIVOS = 5;
 //     console.log("Carga Inicial de Dados concluída!");
 // });
 
-
-
-
-
-
-// const storageService = require('./services/StorageService');
-// let StorageService = new storageService();
-// let bucket = StorageService.createBucket("teste-alysson");
-// await fileService.deletarBucket();
-// let bucket = StorageService.createBucket("computacaoemnuvem");
-// bucket.then(async bucketService => {
-//     for (let i = 0; i < 5; i++) {
-//         const path = './upload/';
-//         let fileName = 'index'+i+'.html';
-//         let fileStream = fs.createReadStream(path+fileName);
-//         // await fileService.uploadFile(fileName, fileStream, fileStream.readableLength);
-//         await bucketService.downloadFile(fileName);
-//         // await fileService.deleteFile(fileName);
-//         // console.log("Informacao do Arquivo");
-//         // const infoFile = await fileService.getInfoFile(fileName);
-//         // console.log(infoFile);
-//     }
-//     console.log("Carga Inicial de Dados concluída!");
-// });
-
 app.use(timeout('2400s'));
 app.use(logger('dev'));
 app.use(express.json());

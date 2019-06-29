@@ -51,7 +51,7 @@ class TestController {
         bucketCreationTime.push(creationTime);
         console.log(`Criou bucket em ${creationTime} MilliSegundos`);
 
-        const NUMBER_OF_FILES = 10;
+        const NUMBER_OF_FILES = 40;
         const READ_TIMES = 10;
         let path = './download/';
 
@@ -80,9 +80,9 @@ class TestController {
             'thecrew', 'jpg');
 
         console.log("Iniciando acesso a informacoes dos Arquivos no S3 + Redis");
-        await TestController.getTimeInfoAccessWithRedis(NUMBER_OF_FILES, fileService, infoFileAccessTime, bucket,
+        await TestController.getTimeInfoAccessWithRedis(NUMBER_OF_FILES, fileService, infoFileAccessTimeRedis, bucket,
             'index', 'html');
-        await TestController.getTimeInfoAccessWithRedis(NUMBER_OF_FILES, fileService, infoFileAccessTime, bucket,
+        await TestController.getTimeInfoAccessWithRedis(NUMBER_OF_FILES, fileService, infoFileAccessTimeRedis, bucket,
             'thecrew', 'jpg');
 
         console.log("Iniciando exclusão dos Arquivos no S3");
@@ -147,7 +147,7 @@ class TestController {
             const endTime = new Date();
             const accessTime = (new Date(endTime - startTime)).getMilliseconds();
             vectorTime.push(accessTime);
-            console.log(`${fileName}${i}.${extension} - 3 Downloads em ${accessTime} MiliSegundos`);
+            console.log(`${fileName}${i}.${extension} - ${readTimes} Downloads em ${accessTime} MiliSegundos`);
         }
     }
 
@@ -160,7 +160,7 @@ class TestController {
             const endTime = new Date();
             let accessTime = (new Date(endTime - startTime)).getMilliseconds();
             vectorTime.push(accessTime);
-            console.log(`${fileName}${i}.${extension} - 3 Acessos em ${accessTime} MiliSegundos`);
+            console.log(`${fileName}${i}.${extension} - ${readTimes} Acessos em ${accessTime} MiliSegundos`);
         }
     }
 
@@ -174,7 +174,7 @@ class TestController {
             const endTime = new Date();
             let accessTime = (new Date(endTime - startTime)).getMilliseconds();
             vectorTime.push(accessTime);
-            console.log(`${fileName}${i}.${extension} - 3 Downloads em ${accessTime} MiliSegundos com REDIS`);
+            console.log(`${fileName}${i}.${extension} - ${readTimes} Downloads em ${accessTime} MiliSegundos com REDIS`);
         }
     }
 
@@ -188,7 +188,7 @@ class TestController {
             const endTime = new Date();
             let accessTime = (new Date(endTime - startTime)).getMilliseconds();
             vectorTime.push(accessTime);
-            console.log(`${fileName}${i}.${extension} - 3 Acessos em ${accessTime} MiliSegundos com REDIS`);
+            console.log(`${fileName}${i}.${extension} - ${readTimes} Acessos em ${accessTime} MiliSegundos com REDIS`);
         }
     }
 
@@ -236,7 +236,7 @@ class TestController {
         const deleteFileTotalTime = deleteFileTime.reduce((a, b) => a + b, 0);
         const averageDeleteTotalTime = deleteFileTotalTime / deleteFileTime.length;
         const deleteFileTotalTimeRedis = deleteFileTimeRedis.reduce((a, b) => a + b, 0);
-        const averageDeleteTotalTimeRedis = deleteFileTotalTimeRedis / deleteFileTotalTimeRedis.length;
+        const averageDeleteTotalTimeRedis = deleteFileTotalTimeRedis / deleteFileTimeRedis.length;
 
         return {
 
@@ -273,7 +273,7 @@ class TestController {
             TemposDeExclusaoDosArquivos: deleteFileTime,
             TempoTotalDeExclusaoDosArquivos: deleteFileTotalTime,
             MediaTempoDeExclusaoDosArquivos: averageDeleteTotalTime,
-            TemposDeExclusaoDosArquivosRedis: deleteFileTotalTimeRedis,
+            TemposDeExclusaoDosArquivosRedis: deleteFileTimeRedis,
             TempoTotalDeExclusaoDosArquivosRedis: deleteFileTotalTimeRedis,
             MediaTempoDeExclusaoDosArquivosRedis: averageDeleteTotalTimeRedis,
 
